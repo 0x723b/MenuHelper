@@ -26,7 +26,14 @@ struct ActionMenuItemRow: View {
             Button {
                 editingItem = true
             } label: {
-                Label("Edit Icon", systemImage: "pencil")
+                Label(item.isCustom ? "Edit Script" : "Edit Icon", systemImage: "pencil")
+            }
+            if item.isCustom {
+                Button(role: .destructive) {
+                    store.deleteActionItem(id: item.id)
+                } label: {
+                    Label("Delete Script", systemImage: "trash")
+                }
             }
         }
         .sheet(isPresented: $editingItem, onDismiss: nil) {

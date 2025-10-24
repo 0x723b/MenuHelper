@@ -110,6 +110,7 @@ class FinderSync: FIFinderSync {
             menuItem.action = #selector(menuAction(_:))
             menuItem.toolTip = "\(item.name)"
             menuItem.tag = 1
+            menuItem.representedObject = item.id
             if menuKind == .toolbarItemMenu {
                 menuItem.image = item.icon
             }
@@ -130,8 +131,13 @@ class FinderSync: FIFinderSync {
             let item = menuStore.getAppItem(name: menuItem.title)
             item?.menuClick(with: urls)
         case 1:
-            let item = menuStore.getActionItem(name: menuItem.title)
-            item?.menuClick(with: urls)
+            if let itemId = menuItem.representedObject as? String {
+                let item = menuStore.getActionItem(id: itemId)
+                item?.menuClick(with: urls)
+            } else {
+                let item = menuStore.getActionItem(name: menuItem.title)
+                item?.menuClick(with: urls)
+            }
         default:
             break
         }

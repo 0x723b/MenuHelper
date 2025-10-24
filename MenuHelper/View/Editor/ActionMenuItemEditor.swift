@@ -14,10 +14,38 @@ struct ActionMenuItemEditor: View {
 
     @State private var item: ActionMenuItem
     private let result: Binding<ActionMenuItem>
+    private let onSave: ((ActionMenuItem) -> Void)?
 
-    init(item: Binding<ActionMenuItem>) {
+    private var customNameBinding: Binding<String> {
+        Binding<String> {
+            item.customName ?? ""
+        } set: { newValue in
+            item.customName = newValue
+            if !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                item.key = newValue
+            }
+        }
+    }
+
+    private var scriptBinding: Binding<String> {
+        Binding<String> {
+            item.script ?? ""
+        } set: { newValue in
+            item.script = newValue
+        }
+    }
+
+    private var isSaveDisabled: Bool {
+        guard item.isCustom else { return false }
+        let name = item.customName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let script = item.script?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return name.isEmpty || script.isEmpty
+    }
+
+    init(item: Binding<ActionMenuItem>, onSave: ((ActionMenuItem) -> Void)? = nil) {
         self._item = State(wrappedValue: item.wrappedValue)
         result = item
+        self.onSave = onSave
     }
 
     var body: some View {
@@ -48,6 +76,29 @@ struct ActionMenuItemEditor: View {
                     .font(.caption)
                 }
             }
+            if item.isCustom {
+                Section {
+                    TextField(text: customNameBinding) {
+                        Text("Script Name")
+                    }
+                }
+                Section {
+                    TextEditor(text: scriptBinding)
+                        .font(.system(.body, design: .monospaced))
+                        .frame(minHeight: 160)
+                        .overlay {
+                            if (item.script ?? "").isEmpty {
+                                Text("echo \"$MENU_HELPER_PRIMARY_PATH\"")
+                                    .foregroundStyle(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.top, 8)
+                            }
+                        }
+                } footer: {
+                    Text("Available environment variables:\nMENU_HELPER_PRIMARY_PATH: First selected file\nMENU_HELPER_SELECTED_PATHS: All selected files (newline separated)\nMENU_HELPER_SELECTED_COUNT: Number of selected files\nMENU_HELPER_SELECTED_PATH_0, _1, etc: Individual file paths")
+                        .font(.caption)
+                }
+            }
         }
         .controlSize(.large)
         .formStyle(.grouped)
@@ -61,11 +112,20 @@ struct ActionMenuItemEditor: View {
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button {
+                    if item.isCustom {
+                        item.customName = item.customName?.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if let trimmed = item.customName, !trimmed.isEmpty {
+                            item.key = trimmed
+                        }
+                        item.script = item.script?.trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
                     result.wrappedValue = item
+                    onSave?(item)
                     dismiss()
                 } label: {
                     Image(systemName: "checkmark.circle")
                 }
+                .disabled(isSaveDisabled)
             }
         }
     }

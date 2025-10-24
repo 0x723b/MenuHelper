@@ -144,14 +144,60 @@ extension ActionMenuItem: MenuItemClickable {
     ]
 
     func menuClick(with urls: [URL]) {
-        let result = ActionMenuItem.actions[actionIndex](urls)
-        if result.success {
-            logger.notice("\(result.description, privacy: .public)")
-        } else {
-            logger.error("\(result.description, privacy: .public)")
+        if isCustom, let script = script {
+            executeCustomScript(script: script, urls: urls)
+        } else if let actionIndex = actionIndex {
+            let result = ActionMenuItem.actions[actionIndex](urls)
+            if result.success {
+                logger.notice("\(result.description, privacy: .public)")
+            } else {
+                logger.error("\(result.description, privacy: .public)")
+            }
+        }
+    }
+
+    private func executeCustomScript(script: String, urls: [URL]) {
+        Task.detached(priority: .userInitiated) {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/bin/bash")
+
+            var environment = ProcessInfo.processInfo.environment
+            environment["MENU_HELPER_SELECTED_PATHS"] = urls.map(\.path).joined(separator: "\n")
+            environment["MENU_HELPER_SELECTED_COUNT"] = "\(urls.count)"
+            for (index, url) in urls.enumerated() {
+                environment["MENU_HELPER_SELECTED_PATH_\(index)"] = url.path
+            }
+            if let first = urls.first {
+                environment["MENU_HELPER_PRIMARY_PATH"] = first.path
+                process.currentDirectoryURL = first.deletingLastPathComponent()
+            }
+            process.environment = environment
+
+            let pipe = Pipe()
+            process.standardOutput = pipe
+            process.standardError = pipe
+
+            process.arguments = ["-c", script, "MenuHelper"] + urls.map(\.path)
+
+            do {
+                try process.run()
+                process.waitUntilExit()
+
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                let output = String(data: data, encoding: .utf8) ?? ""
+
+                if process.terminationStatus == 0 {
+                    logger.notice("Custom script executed successfully: \(output, privacy: .public)")
+                } else {
+                    logger.error("Custom script failed with status \(process.terminationStatus): \(output, privacy: .public)")
+                }
+            } catch {
+                logger.error("Failed to execute custom script: \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
 }
+
 
 struct ActionMenuResult: CustomStringConvertible {
     var success = false

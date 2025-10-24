@@ -118,6 +118,16 @@ class MenuItemStore {
         actionItems.first { $0.name == name }
     }
 
+    func getActionItem(id: String) -> ActionMenuItem? {
+        actionItems.first { $0.id == id }
+    }
+
+    func deleteActionItem(id: String) {
+        if let index = actionItems.firstIndex(where: { $0.id == id }) {
+            deleteActionItems(offsets: IndexSet(integer: index))
+        }
+    }
+
     // MARK: - Update Item
 
     func updateAppItem(item: AppMenuItem, index: Int?) {

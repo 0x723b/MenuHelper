@@ -10,23 +10,57 @@ import Foundation
 
 struct ActionMenuItem: MenuItem {
     static func == (lhs: ActionMenuItem, rhs: ActionMenuItem) -> Bool {
-        lhs.name == rhs.name
+        lhs.id == rhs.id
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 
     var key: String
-    var name: String { String(localized: String.LocalizationValue(key)) }
     var enabled = true
-    var actionIndex: Int
+    var actionIndex: Int?
     var customIconData: Data?
     var customIconType: String?
+    var customName: String?
+    var script: String?
+    var customIdentifier: UUID?
 
-    var icon: NSImage { 
-        if let customIconData = customIconData, let customIconType = customIconType {
+    var isCustom: Bool { customIdentifier != nil }
+
+    var name: String {
+        if let customName, !customName.isEmpty {
+            return customName
+        }
+        return String(localized: String.LocalizationValue(key))
+    }
+
+    var icon: NSImage {
+        if let customIconData, let customIconType {
             return createCustomIcon(from: customIconData, type: customIconType)
         }
-        return NSImage(named: "icon")! 
+        return NSImage(named: "icon")!
     }
-    
+
+    var id: String { customIdentifier?.uuidString ?? key }
+
+    init(key: String, actionIndex: Int, enabled: Bool = true) {
+        self.key = key
+        self.actionIndex = actionIndex
+        self.enabled = enabled
+    }
+
+    init(name: String, script: String, enabled: Bool = true, iconData: Data? = nil, iconType: String? = nil, identifier: UUID = UUID()) {
+        self.key = name
+        self.customName = name
+        self.script = script
+        self.enabled = enabled
+        self.customIconData = iconData
+        self.customIconType = iconType
+        self.customIdentifier = identifier
+        self.actionIndex = nil
+    }
+
     private func createCustomIcon(from data: Data, type: String) -> NSImage {
         if type == "svg" {
             if let image = NSImage(data: data) {
