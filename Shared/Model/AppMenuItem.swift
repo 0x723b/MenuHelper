@@ -22,6 +22,8 @@ struct AppMenuItem: MenuItem {
     var inheritFromGlobalEnvironment = true
     var arguments: [String] = []
     var environment: [String: String] = [:]
+    var customIconData: Data?
+    var customIconType: String?
 
     var appName: String {
         FileManager.default.displayName(atPath: url.path)
@@ -31,7 +33,24 @@ struct AppMenuItem: MenuItem {
         itemName.isEmpty ? appName : itemName
     }
 
-    var icon: NSImage { NSWorkspace.shared.icon(forFile: url.path) }
+    var icon: NSImage { 
+        if let customIconData = customIconData, let customIconType = customIconType {
+            return createCustomIcon(from: customIconData, type: customIconType)
+        }
+        return NSWorkspace.shared.icon(forFile: url.path)
+    }
+    
+    private func createCustomIcon(from data: Data, type: String) -> NSImage {
+        if type == "svg" {
+            if let image = NSImage(data: data) {
+                image.isTemplate = true
+                return image
+            }
+        } else if let image = NSImage(data: data) {
+            return image
+        }
+        return NSWorkspace.shared.icon(forFile: url.path)
+    }
 }
 
 extension AppMenuItem {

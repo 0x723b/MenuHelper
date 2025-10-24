@@ -17,8 +17,27 @@ struct ActionMenuItem: MenuItem {
     var name: String { String(localized: String.LocalizationValue(key)) }
     var enabled = true
     var actionIndex: Int
+    var customIconData: Data?
+    var customIconType: String?
 
-    var icon: NSImage { NSImage(named: "icon")! }
+    var icon: NSImage { 
+        if let customIconData = customIconData, let customIconType = customIconType {
+            return createCustomIcon(from: customIconData, type: customIconType)
+        }
+        return NSImage(named: "icon")! 
+    }
+    
+    private func createCustomIcon(from data: Data, type: String) -> NSImage {
+        if type == "svg" {
+            if let image = NSImage(data: data) {
+                image.isTemplate = true
+                return image
+            }
+        } else if let image = NSImage(data: data) {
+            return image
+        }
+        return NSImage(named: "icon")!
+    }
 }
 
 extension ActionMenuItem {
