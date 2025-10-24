@@ -1,37 +1,21 @@
 //
-//  AppMenuItemEditor.swift
+//  ActionMenuItemEditor.swift
 //  MenuHelper
 //
-//  Created by KyleYe on 2022/3/22.
+//  Created by MenuHelper on 2024.
 //
 
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct AppMenuItemEditor: View {
+struct ActionMenuItemEditor: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(MenuItemStore.self) private var store
 
-    @State private var item: AppMenuItem
-    private let result: Binding<AppMenuItem>
+    @State private var item: ActionMenuItem
+    private let result: Binding<ActionMenuItem>
 
-    private var itemArgumentBinding: Binding<String> {
-        Binding<String> {
-            item.arguments.joined(separator: " ")
-        } set: { newValue in
-            item.arguments = newValue.split(separator: " ").map { String($0) }
-        }
-    }
-
-    private var itemEnvironmentBinding: Binding<String> {
-        Binding<String> {
-            item.environment.toString()
-        } set: { newValue in
-            item.environment = newValue.toDictionary()
-        }
-    }
-
-    init(item: Binding<AppMenuItem>) {
+    init(item: Binding<ActionMenuItem>) {
         self._item = State(wrappedValue: item.wrappedValue)
         result = item
     }
@@ -40,7 +24,7 @@ struct AppMenuItemEditor: View {
         Form {
             HStack {
                 Toggle(isOn: $item.enabled) {
-                    Text(item.appName).font(.title)
+                    Text(item.name).font(.title)
                 }.toggleStyle(.button)
                 Spacer()
                 VStack {
@@ -62,35 +46,6 @@ struct AppMenuItemEditor: View {
                         }
                     }
                     .font(.caption)
-                }
-            }
-            Section {
-                TextField(
-                    text: $item.itemName,
-                    axis: .horizontal
-                ) {
-                    Text("Display Name")
-                }
-            }
-            Section {
-                Toggle("Inherit from global arguments:", isOn: $item.inheritFromGlobalArguments)
-
-                TextField(
-                    text: itemArgumentBinding,
-                    prompt: Text(verbatim: "-a -b --help"),
-                    axis: .horizontal
-                ) {
-                    Text("Arguments")
-                }
-            }
-            Section {
-                Toggle("Inherit from global environment:", isOn: $item.inheritFromGlobalEnvironment)
-                TextField(
-                    text: itemEnvironmentBinding,
-                    prompt: Text(verbatim: "KEY_A=0 KEY_B=1"),
-                    axis: .horizontal
-                ) {
-                    Text("Environment")
                 }
             }
         }
@@ -149,9 +104,9 @@ struct AppMenuItemEditor: View {
 #Preview {
     struct EditorPreview: View {
         @State private var store = MenuItemStore()
-        @State private var item = AppMenuItem.xcode!
+        @State private var item = ActionMenuItem.copyPath
         var body: some View {
-            AppMenuItemEditor(item: $item)
+            ActionMenuItemEditor(item: $item)
                     .environment(store)
         }
     }

@@ -85,16 +85,9 @@ struct MenuSettingTab: View {
             Toggle(isOn: $showSubMenuForAction) {
                 Text("Show as submenu")
             }
-            ForEach($store.actionItems) { $item in
-                HStack {
-                    Image(nsImage: item.icon)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 32, height: 32)
-                    Toggle(isOn: $item.enabled) {
-                        Text(item.name)
-                    }.toggleStyle(.button)
-                }
+            ForEach($store.actionItems.indices, id: \.self) { index in
+                ActionMenuItemRow(item: $store.actionItems[index])
+                    .environment(store)
             }
             .onMove { store.moveActionItems(from: $0, to: $1) }
         } header: {
