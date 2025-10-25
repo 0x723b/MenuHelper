@@ -11,6 +11,12 @@ struct MenuSettingTab: View {
     @Bindable var store: MenuItemStore
     @State private var isDrogTargeted = false
     @State private var appMenuItemEdited = false
+    @State private var creatingShellScript = false
+    @State private var draftShellScript = ActionMenuItem(
+        name: "New Script",
+        script: "echo \"$MENU_HELPER_PRIMARY_PATH\"",
+        enabled: true
+    )
 
     @AppStorage(Key.showSubMenuForApplication)
     private var showSubMenuForApplication = false
@@ -25,6 +31,12 @@ struct MenuSettingTab: View {
         }
         .controlSize(.large)
         .formStyle(.grouped)
+        .sheet(isPresented: $creatingShellScript) {
+            ActionMenuItemEditor(item: $draftShellScript) { item in
+                store.appendItem(item)
+            }
+            .environment(store)
+        }
     }
 
     @MainActor
@@ -94,16 +106,34 @@ struct MenuSettingTab: View {
             HStack {
                 Text("Action Menu Items")
                 Spacer()
-                Button {
-                    store.resetActionItems()
+                Menu {
+                    Button {
+                        addCustomShellScript()
+                    } label: {
+                        Label("Add Shell Script", systemImage: "terminal")
+                    }
+                    Button {
+                        store.resetActionItems()
+                    } label: {
+                        Label("Reset Action Menu Items", systemImage: "arrow.triangle.2.circlepath")
+                    }
                 } label: {
-                    Label("Reset Action Menu Items", systemImage: "arrow.triangle.2.circlepath")
+                    Label("Actions", systemImage: "plus.circle")
                         .font(.body)
                 }
             }
         } footer: {
             Link("Suggest more action menus here", destination: URL(string: "https://github.com/Kyle-Ye/MenuHelperApp/issues/new/choose")!)
         }
+    }
+
+    private func addCustomShellScript() {
+        draftShellScript = ActionMenuItem(
+            name: "New Script",
+            script: "echo \"$MENU_HELPER_PRIMARY_PATH\"",
+            enabled: true
+        )
+        creatingShellScript = true
     }
 }
 
